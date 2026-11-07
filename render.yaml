@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: swordigo-coop-relay-luisg
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health

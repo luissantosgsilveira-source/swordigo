@@ -1,0 +1,10 @@
+{
+  "name": "swordigo-coop-relay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+	"start": "node src/local.js",
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy"
+  }
+}
