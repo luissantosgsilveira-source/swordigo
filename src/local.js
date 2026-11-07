@@ -157,6 +157,8 @@ class WebSocketPeer {
 	}
 
 	sendJson(message) {
+		/* Position packets are replaceable; avoid buffering seconds of stale movement. */
+		if (message?.type === "state" && this.socket.writableLength > 512) return;
 		const text = JSON.stringify(message);
 		if (Buffer.byteLength(text) <= MAX_MESSAGE_BYTES) sendFrame(this.socket, 1, text);
 	}
@@ -245,19 +247,23 @@ class WebSocketPeer {
 			this.sendJson({ type: "pong", at: Date.now() });
 			return;
 		}
-		if (body.type === "input" && this.player.role === "guest") {
+		if (body.type === "input") {
 			const validAction = ["move", "jump", "swing", "use"].includes(body.action);
 			const validValue = body.action === "move"
 				? [-1, 0, 1].includes(body.value)
 				: typeof body.value === "boolean";
 			if (!validAction || !validValue) return;
-			this.room.hostPeer?.sendJson({
-				type: "input",
-				fromId: this.player.id,
-				fromName: this.player.name,
-				action: body.action,
-				value: body.value,
-			});
+			const remoteRole = this.player.role === "host" ? "guest" : "host";
+			for (const peer of this.room.peers.values()) {
+				if (peer.player.role !== remoteRole) continue;
+				peer.sendJson({
+					type: "input",
+					fromId: this.player.id,
+					fromName: this.player.name,
+					action: body.action,
+					value: body.value,
+				});
+			}
 			return;
 		}
 		if (body.type === "state") {
@@ -360,7 +366,7 @@ class WebSocketPeer {
 const server = createServer(async (request, response) => {
 	const url = new URL(request.url, "http://127.0.0.1");
 	if (url.pathname === "/health" && request.method === "GET") {
-		jsonResponse(response, 200, { ok: true, service: "swordigo-coop-relay" });
+		jsonResponse(response, 200, { ok: true, service: "swordigo-coop-relay", protocolVersion: 2 });
 		return;
 	}
 	if (url.pathname === "/api/rooms" && request.method === "POST") {
