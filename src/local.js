@@ -372,7 +372,12 @@ class WebSocketPeer {
 const server = createServer(async (request, response) => {
 	const url = new URL(request.url, "http://127.0.0.1");
 	if (url.pathname === "/health" && request.method === "GET") {
-		jsonResponse(response, 200, { ok: true, service: "swordigo-coop-relay", protocolVersion: 2 });
+		jsonResponse(response, 200, {
+			ok: true,
+			service: "swordigo-coop-relay",
+			protocolVersion: 2,
+			features: ["room_weather"],
+		});
 		return;
 	}
 	if (url.pathname === "/api/rooms" && request.method === "POST") {
