@@ -81,6 +81,7 @@ function createRoom(hostName) {
 			profileSnapshot: null,
 			currentTransition: null,
 			transitionSequence: 0,
+			weatherEnabled: false,
 			closed: false,
 		};
 		rooms.set(code, room);
@@ -272,6 +273,11 @@ class WebSocketPeer {
 			broadcast(this.room, { type: "state", data: body.data }, (player) => player.role === remoteRole);
 			return;
 		}
+		if (body.type === "weather" && typeof body.enabled === "boolean") {
+			this.room.weatherEnabled = body.enabled;
+			broadcast(this.room, { type: "weather", enabled: body.enabled });
+			return;
+		}
 		if (body.type === "transition" && this.player.role === "host") {
 			const level = typeof body.level === "string" ? body.level : "";
 			const spawn = typeof body.spawn === "string" ? body.spawn : "";
@@ -447,6 +453,7 @@ server.on("upgrade", (request, socket, head) => {
 	room.peers.set(player.id, peer);
 	if (role === "host") room.hostPeer = peer;
 	peer.sendJson({ type: "welcome", playerId: player.id, roomCode: room.code });
+	peer.sendJson({ type: "weather", enabled: room.weatherEnabled });
 	broadcastRoster(room);
 	if (role === "guest" && room.profileSnapshot) sendProfileSnapshot(peer, room.profileSnapshot);
 	if (role === "guest" && room.currentTransition) peer.sendJson(room.currentTransition);
