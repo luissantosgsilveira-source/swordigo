@@ -245,7 +245,11 @@ class WebSocketPeer {
 		}
 		if (this.room.closed) return;
 		if (body.type === "ping") {
-			this.sendJson({ type: "pong", at: Date.now() });
+			this.sendJson({
+				type: "pong",
+				clientAt: Number.isSafeInteger(body.clientAt) ? body.clientAt : null,
+				at: Date.now(),
+			});
 			return;
 		}
 		if (body.type === "input") {
@@ -376,7 +380,7 @@ const server = createServer(async (request, response) => {
 			ok: true,
 			service: "swordigo-coop-relay",
 			protocolVersion: 2,
-			features: ["room_weather"],
+			features: ["room_weather", "latency_compensation"],
 		});
 		return;
 	}
